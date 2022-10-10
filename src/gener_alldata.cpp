@@ -251,9 +251,11 @@ int main(int argc, char** argv)
                     velocity_x_of_point.values.push_back(velocity_x);
                     velocity_y_of_point.values.push_back(velocity_y);
 
-                    features_camPre = features_cam;
+                    
                 }
             }
+
+            features_camPre = features_cam;
             // std::cout << "points => features_cam " << points.size() << " " << features_cam.size() << std::endl;
             // printf("feature_points->header.stamp =  %f \n", feature_points->header.stamp.toSec());
             // std::cout << "feature_points->header.stamp = " << feature_points->header.stamp.toSec() << std::endl;

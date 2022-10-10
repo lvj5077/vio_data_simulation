@@ -241,7 +241,14 @@ int main(int argc, char** argv)
                 if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h && mask.at<uchar>(pt)==255 )
                 {
                     cur_pts.push_back(pt);
-                    double dpt = (double)std::rand() / RAND_MAX * 7. + 0.1;
+                    double dpt = (double)std::rand() / RAND_MAX * 10. + 0.1;
+
+                    // set a measurement limit
+                    // if(dpt > 5){
+                    //     dpt = -1.0;
+                    // }else{
+                    //     dpt = dpt + dist(generator);
+                    // }
 
                     Eigen::Vector4d p_c;
                     p_c[0] = pt_normal_x * dpt;
@@ -290,6 +297,13 @@ int main(int argc, char** argv)
                 p.x = obs.x();
                 p.y = obs.y();
                 p.z = pc1(2); // depth || used to be 1.0. but used for depth now
+
+                // set a measurement limit
+                if(p.z > 5){
+                    p.z = -1.0;
+                }else{
+                    // p.z = p.z + dist(generator);
+                } 
 
                 feature_points->points.push_back(p);
 

@@ -21,7 +21,7 @@ public:
     double t_start = 0;
     // double t_end = 180;  // seconds
 
-    double t_end = 180;  // seconds
+    double t_end = 60;  // seconds
 
     // // noise
     // double gyro_bias_sigma = 0.00005;
@@ -43,7 +43,7 @@ public:
     // double acc_noise_sigma = 0.0;
 
 
-    double pixel_noise = 3.0;              // 1 pixel noise
+    double pixel_noise = 0.0;              // 1 pixel noise
 
     // cam f
     double fx = 484.85;
@@ -53,10 +53,13 @@ public:
     double image_w = 640;
     double image_h = 480;
 
+    int feature_num = 150;
 
     // 外参数
     Eigen::Matrix3d R_bc;   // cam to body
     Eigen::Vector3d t_bc;     // cam to body
+
+    int MIN_DIST = 30;      // 30 pixel
 
 };
 

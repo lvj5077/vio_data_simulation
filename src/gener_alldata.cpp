@@ -103,9 +103,9 @@ void CreatePointsLines(Points& points, Lines& lines)
 int main(int argc, char** argv)
 {
 
-    Points points;
-    Lines lines;
-    CreatePointsLines(points, lines);
+    // Points points;
+    // Lines lines;
+    // CreatePointsLines(points, lines);
 
     const std::string home_path = getenv("HOME");
     const std::string bag_path = home_path + "/imu_features.bag";
@@ -138,13 +138,17 @@ int main(int argc, char** argv)
 
     bool pub_cam = true;
     std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > features_camPre;
-    std::vector<cv::Point2f> prev_pts,cur_pts;
+    std::vector<cv::Point2f> old_pts;
+    std::vector<int> seenInPrevFrame;
+    std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > allPoints_word;
+    allPoints_word.clear();
     for (double t = params.t_start; t < params.t_end;) {
-        std::cout << "t = " << t << " / "<< params.t_end << std::endl;
+        // std::cout << "t = " << t << " / "<< params.t_end << std::endl;
         
         if(pub_cam)
         {
-            cur_pts.clear();
+            std::vector<cv::Point2f> prev_pts;
+            std::vector<cv::Point2f> cur_pts;
             ros::Time time_nowCam(begin + t_cam);
             sensor_msgs::PointCloudPtr feature_points(new sensor_msgs::PointCloud);
             sensor_msgs::ChannelFloat32 id_of_point;
@@ -169,80 +173,166 @@ int main(int argc, char** argv)
             Twc.block(0, 0, 3, 3) = cam.Rwb;
             Twc.block(0, 3, 3, 1) = cam.twb;
 
-            // 遍历所有的特征点，看哪些特征点在视野里
-            std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > points_cam;    // ３维点在当前cam视野里
+
+            std::srand ( unsigned ( std::time(0) ) );
+
             std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > features_cam;  // 对应的２维图像坐标
-            for (int i = 0; i < points.size(); ++i) {
-                Eigen::Vector4d pw = points[i];         
+            int prev_idx = 0;
+            for (int i = 0; i < allPoints_word.size(); i++){
+                if(seenInPrevFrame[i] < 0)  // 该点在上一帧中没有被观测到
+                    continue;
+
+                Eigen::Vector4d pw = allPoints_word[i];         
                 pw[3] = 1;                               
-                Eigen::Vector4d pc1 = Twc.inverse() * pw; // T_wc.inverse() * Pw  -- > point in cam frame
+                Eigen::Vector4d pc1 = Twc.inverse() * pw;   // T_wc.inverse() * Pw  -- > point in cam frame
+                if(pc1(2) < 0 || pc1(2) > 10){ // z必须大于０,在摄像机坐标系前方
+                    seenInPrevFrame[i] = -1;
+                    prev_idx++;
+                    continue;
+                }                    
 
-                if(pc1(2) < 0) continue; // z必须大于０,在摄像机坐标系前方
+                cv::Point2f pt;
+                pt.x = pc1(0)/pc1(2) * params.fx + params.cx;
+                pt.y = pc1(1)/pc1(2) * params.fy + params.cy;
 
-                Eigen::Vector2d obs(pc1(0)/pc1(2), pc1(1)/pc1(2)) ;
+                pt.x = pt.x + dist(generator);
+                pt.y = pt.y + dist(generator);
 
-                // printf("obs: u: %f, v: %f \n", obs(0), obs(1));
-                // std::cout << "pc1: " << pc1.transpose() << std::endl;
+                if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h )
+                {
+                    cur_pts.push_back(pt);
+                    prev_pts.push_back(old_pts[prev_idx]);
+                }else{
+                    seenInPrevFrame[i] = -1;
+                }
+                prev_idx++;
+            }
+            // cur_pts size
+            printf("tracked cur_pts size: %ld || need %ld more featurs  ", cur_pts.size(), params.feature_num - cur_pts.size());
 
-                double u = obs.x() * params.fx + params.cx;
-                double v = obs.y() * params.fy + params.cy;
+            printf("cur_pts size: %ld || need %ld more featurs \n", cur_pts.size(), params.feature_num - cur_pts.size());
 
-                // std::cout << "u: " << u << " v: " << v << std::endl;
+            cv::Mat trackImg = cv::Mat::zeros(params.image_h, params.image_w, CV_8UC3);
+            for (size_t i = 0; i < cur_pts.size(); ++i) {
+                circle(trackImg, prev_pts[i], 2, cv::Scalar(255,0,0), 2);
+                circle(trackImg, cur_pts[i], 2, cv::Scalar(0,0,255), 2);
+                cv::arrowedLine(trackImg,  prev_pts[i], cur_pts[i], cv::Scalar(0,255, 0), 1, 8, 0, 0.2);
+            }
 
-                u = u + dist(generator);
-                v = v + dist(generator);
+            cv::Mat mask = cv::Mat(params.image_h, params.image_w, CV_8UC1, cv::Scalar(255));
 
-                // pint u,v
-                // std::cout << "u: " << u << " v: " << v << std::endl;
+            for (int i = 0; i < cur_pts.size(); i++){
+                if (mask.at<uchar>(cur_pts[i]) == 255)
+                {
+                    cv::circle(mask, cur_pts[i], params.MIN_DIST, 0, -1);
+                }
+            }
 
-                double un_x, un_y;
-                un_x = (u-params.cx)/params.fx;
-                un_y = (v-params.cy)/params.fy;
+            while(cur_pts.size() < params.feature_num)
+            {
+                double pt_normal_x = (double)std::rand() / RAND_MAX * 1. - 0.5;
+                double pt_normal_y = (double)std::rand() / RAND_MAX * 1. - 0.5;
 
-                obs.x() = (u-params.cx)/params.fx;
-                obs.y() = (v-params.cy)/params.fy;
-                // std::cout << "un_x: " << un_x << " un_y: " << un_y << std::endl;
+                cv::Point2f pt;
+                pt.x = params.cx + params.fx * pt_normal_x;
+                pt.y = params.cy + params.fy * pt_normal_y;
 
-                // print obs
-                // std::cout << "obs: " << obs.transpose() << std::endl;
+                pt.x = pt.x + dist(generator);
+                pt.y = pt.y + dist(generator);
 
+                if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h && mask.at<uchar>(pt)==255 )
+                {
+                    cur_pts.push_back(pt);
+                    double dpt = (double)std::rand() / RAND_MAX * 7. + 0.1;
+
+                    Eigen::Vector4d p_c;
+                    p_c[0] = pt_normal_x * dpt;
+                    p_c[1] = pt_normal_y * dpt;
+                    p_c[2] = dpt;
+                    p_c[3] = 1.;
+
+                    Eigen::Vector4d p_w = Twc * p_c;
+                    allPoints_word.push_back(p_w);
+                    seenInPrevFrame.push_back(1);
+                }
+            }
+
+            // for (int k = 0; k < params.feature_num - cur_pts.size() ; k++ ){
+                
+            //     double pt_normal_x = (double)std::rand() / RAND_MAX * 1. - 0.5;
+            //     double pt_normal_y = (double)std::rand() / RAND_MAX * 1. - 0.5;
+
+            //     cv::Point2f pt;
+            //     pt.x = params.cx + params.fx * pt_normal_x;
+            //     pt.y = params.cy + params.fy * pt_normal_y;
+
+            //     pt.x = pt.x + dist(generator);
+            //     pt.y = pt.y + dist(generator);
+
+            //     if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h )
+            //     {
+            //         cur_pts.push_back(pt);
+            //         double dpt = (double)std::rand() / RAND_MAX * 7. + 0.1;
+
+            //         Eigen::Vector4d p_c;
+            //         p_c[0] = pt_normal_x * dpt;
+            //         p_c[1] = pt_normal_y * dpt;
+            //         p_c[2] = dpt;
+            //         p_c[3] = 1.;
+
+            //         Eigen::Vector4d p_w = Twc * p_c;
+            //         allPoints_word.push_back(p_w);
+            //         seenInPrevFrame.push_back(1);
+            //     }
+            // }
+
+            int cur_idx = 0;
+            for (int i = 0; i < allPoints_word.size(); i++){
+                if(seenInPrevFrame[i]<0) continue;
+
+                Eigen::Vector4d pw = allPoints_word[i];         
+                pw[3] = 1;                               
+                Eigen::Vector4d pc1 = Twc.inverse() * pw;   // T_wc.inverse() * Pw  -- > point in cam frame
+                if(pc1(2) < 0){
+                    std::cout << "pc1(2) < 0 should not be here!!!" << std::endl;
+                }
+
+                double u = cur_pts[cur_idx].x;
+                double v = cur_pts[cur_idx].y;
+
+                id_of_point.values.push_back(i);
+
+                u_of_point.values.push_back( u );
+                v_of_point.values.push_back( v );
+
+                Eigen::Vector2d obs;
+                obs.x() = (u - params.cx) / params.fx;
+                obs.y() = (v - params.cy) / params.fy;
+                
+
+                // printf("uv: %f, %f ", u, v);
+                // printf("obs: %f, %f ", obs.x(), obs.y());
+                // printf("pc1(0)/pc1(2), pc1(1)/pc1(2) : %f, %f \n", pc1(0)/pc1(2), pc1(1)/pc1(2));
+
+                features_cam.push_back(obs);
+                geometry_msgs::Point32 p;
+                p.x = obs.x();
+                p.y = obs.y();
+                p.z = pc1(2); // depth || used to be 1.0. but used for depth now
 
                 double velocity_x = 0.0;
                 double velocity_y = 0.0;
-                // if( u < params.image_w && u > 0 && v > 0 && v < params.image_h )
-                {
-                    cv::Point2f temp_uv;
-                    temp_uv.x = u;
-                    temp_uv.y = v;
-                    cur_pts.push_back(temp_uv);
-
-                    points_cam.push_back(points[i]);
-                    features_cam.push_back(obs);
-
-                    geometry_msgs::Point32 p;
-                    p.x = obs.x();
-                    p.y = obs.y();
-                    p.z = pc1(2); // depth || used to be 1.0. but used for depth now
-
-                    if(t_cam < 0.0001){
-                        velocity_x = 0.0;
-                        velocity_y = 0.0;
-                    }else{
-                        velocity_x = (obs.x() - features_camPre[i].x())*params.cam_frequency;
-                        velocity_y = (obs.y() - features_camPre[i].y())*params.cam_frequency;
-                    }
-                    
-                    // print obs u v velocity
-                    // printf("p.x: %f, p.y: %f, u: %f, v: %f, velocity_x: %f, velocity_y: %f \n", p.x, p.y, u, v, velocity_x, velocity_y);
-                    
-
-                    feature_points->points.push_back(p);
-                    id_of_point.values.push_back(i);
-                    u_of_point.values.push_back(u);
-                    v_of_point.values.push_back(v);
-                    velocity_x_of_point.values.push_back(velocity_x);
-                    velocity_y_of_point.values.push_back(velocity_y);
+                if(t_cam < 0.0001){
+                    velocity_x = 0.0;
+                    velocity_y = 0.0;
+                }else{
+                    velocity_x = (obs.x() - features_camPre[i].x())*params.cam_frequency;
+                    velocity_y = (obs.y() - features_camPre[i].y())*params.cam_frequency;
                 }
+
+                velocity_x_of_point.values.push_back(velocity_x);
+                velocity_y_of_point.values.push_back(velocity_y);
+                cur_idx++;
             }
 
             features_camPre = features_cam;
@@ -259,13 +349,6 @@ int main(int argc, char** argv)
                 prev_pts = cur_pts;
             }
             
-            cv::Mat trackImg = cv::Mat::zeros(params.image_h, params.image_w, CV_8UC3);
-            for (size_t i = 0; i < prev_pts.size(); ++i) {
-                circle(trackImg, prev_pts[i], 2, cv::Scalar(255,0,0), 2);
-                circle(trackImg, cur_pts[i], 2, cv::Scalar(0,0,255), 2);
-                cv::arrowedLine(trackImg,  prev_pts[i], cur_pts[i], cv::Scalar(0,255, 0), 1, 8, 0, 0.2);
-            }
-
             cv_bridge::CvImage track_msg; 
             track_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3; 
             track_msg.header.stamp = time_nowCam;
@@ -273,7 +356,7 @@ int main(int argc, char** argv)
             bag.write("/feature_tracker/feature_img", time_nowCam, track_msg); 
 
             pub_cam = false;
-            prev_pts = cur_pts;
+            old_pts = cur_pts;
         }
 
 

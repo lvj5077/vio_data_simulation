@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     ros::Time::init();
     double begin =ros::Time::now().toSec();
 
-    begin = 1665110771.130929232;
+    begin = 1234567890.123456789;
     std::cout << "Start generate data, please waiting..."<<std::endl;
 
     // IMU model
@@ -173,8 +173,8 @@ int main(int argc, char** argv)
             std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > points_cam;    // ３维点在当前cam视野里
             std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > features_cam;  // 对应的２维图像坐标
             for (int i = 0; i < points.size(); ++i) {
-                Eigen::Vector4d pw = points[i];          // 最后一位存着feature id
-                pw[3] = 1;                               //改成齐次坐标最后一位
+                Eigen::Vector4d pw = points[i];         
+                pw[3] = 1;                               
                 Eigen::Vector4d pc1 = Twc.inverse() * pw; // T_wc.inverse() * Pw  -- > point in cam frame
 
                 if(pc1(2) < 0) continue; // z必须大于０,在摄像机坐标系前方
@@ -211,7 +211,6 @@ int main(int argc, char** argv)
                 double velocity_y = 0.0;
                 // if( u < params.image_w && u > 0 && v > 0 && v < params.image_h )
                 {
-
                     cv::Point2f temp_uv;
                     temp_uv.x = u;
                     temp_uv.y = v;
@@ -223,14 +222,7 @@ int main(int argc, char** argv)
                     geometry_msgs::Point32 p;
                     p.x = obs.x();
                     p.y = obs.y();
-
-
-                    // std::cout << "p: " << p.x << " " << p.y << std::endl << std::endl;
-                    // p.x = un_x;
-                    // p.y = un_y;
-                    
-                    // p.z = 1.0;
-                    p.z = pc1(2);
+                    p.z = pc1(2); // depth || used to be 1.0. but used for depth now
 
                     if(t_cam < 0.0001){
                         velocity_x = 0.0;
@@ -250,15 +242,10 @@ int main(int argc, char** argv)
                     v_of_point.values.push_back(v);
                     velocity_x_of_point.values.push_back(velocity_x);
                     velocity_y_of_point.values.push_back(velocity_y);
-
-                    
                 }
             }
 
             features_camPre = features_cam;
-            // std::cout << "points => features_cam " << points.size() << " " << features_cam.size() << std::endl;
-            // printf("feature_points->header.stamp =  %f \n", feature_points->header.stamp.toSec());
-            // std::cout << "feature_points->header.stamp = " << feature_points->header.stamp.toSec() << std::endl;
             
             feature_points->channels.push_back(id_of_point);
             feature_points->channels.push_back(u_of_point);

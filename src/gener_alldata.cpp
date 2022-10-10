@@ -185,7 +185,7 @@ int main(int argc, char** argv)
                 Eigen::Vector4d pw = allPoints_word[i];         
                 pw[3] = 1;                               
                 Eigen::Vector4d pc1 = Twc.inverse() * pw;   // T_wc.inverse() * Pw  -- > point in cam frame
-                if(pc1(2) < 0 || pc1(2) > 10){ // z必须大于０,在摄像机坐标系前方
+                if(pc1(2) < 0 || pc1(2) > 15){ // z必须大于０,在摄像机坐标系前方
                     seenInPrevFrame[i] = -1;
                     prev_idx++;
                     continue;
@@ -209,8 +209,6 @@ int main(int argc, char** argv)
             }
             // cur_pts size
             printf("tracked cur_pts size: %ld || need %ld more featurs  ", cur_pts.size(), params.feature_num - cur_pts.size());
-
-            printf("cur_pts size: %ld || need %ld more featurs \n", cur_pts.size(), params.feature_num - cur_pts.size());
 
             cv::Mat trackImg = cv::Mat::zeros(params.image_h, params.image_w, CV_8UC3);
             for (size_t i = 0; i < cur_pts.size(); ++i) {
@@ -257,34 +255,7 @@ int main(int argc, char** argv)
                 }
             }
 
-            // for (int k = 0; k < params.feature_num - cur_pts.size() ; k++ ){
-                
-            //     double pt_normal_x = (double)std::rand() / RAND_MAX * 1. - 0.5;
-            //     double pt_normal_y = (double)std::rand() / RAND_MAX * 1. - 0.5;
-
-            //     cv::Point2f pt;
-            //     pt.x = params.cx + params.fx * pt_normal_x;
-            //     pt.y = params.cy + params.fy * pt_normal_y;
-
-            //     pt.x = pt.x + dist(generator);
-            //     pt.y = pt.y + dist(generator);
-
-            //     if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h )
-            //     {
-            //         cur_pts.push_back(pt);
-            //         double dpt = (double)std::rand() / RAND_MAX * 7. + 0.1;
-
-            //         Eigen::Vector4d p_c;
-            //         p_c[0] = pt_normal_x * dpt;
-            //         p_c[1] = pt_normal_y * dpt;
-            //         p_c[2] = dpt;
-            //         p_c[3] = 1.;
-
-            //         Eigen::Vector4d p_w = Twc * p_c;
-            //         allPoints_word.push_back(p_w);
-            //         seenInPrevFrame.push_back(1);
-            //     }
-            // }
+            printf("cur_pts size: %ld || total %ld featurs \n", cur_pts.size(), allPoints_word.size());
 
             int cur_idx = 0;
             for (int i = 0; i < allPoints_word.size(); i++){
@@ -320,30 +291,41 @@ int main(int argc, char** argv)
                 p.y = obs.y();
                 p.z = pc1(2); // depth || used to be 1.0. but used for depth now
 
+                feature_points->points.push_back(p);
+
                 double velocity_x = 0.0;
                 double velocity_y = 0.0;
                 if(t_cam < 0.0001){
                     velocity_x = 0.0;
                     velocity_y = 0.0;
-                }else{
-                    velocity_x = (obs.x() - features_camPre[i].x())*params.cam_frequency;
-                    velocity_y = (obs.y() - features_camPre[i].y())*params.cam_frequency;
+                }
+                if(i < prev_pts.size())
+                {
+                    velocity_x = (cur_pts[i].x - prev_pts[i].x )*params.cam_frequency / params.fx;
+                    velocity_y = (cur_pts[i].y - prev_pts[i].y )*params.cam_frequency / params.fy;
                 }
 
                 velocity_x_of_point.values.push_back(velocity_x);
                 velocity_y_of_point.values.push_back(velocity_y);
+
+
+
                 cur_idx++;
             }
 
-            features_camPre = features_cam;
-            
+
             feature_points->channels.push_back(id_of_point);
             feature_points->channels.push_back(u_of_point);
             feature_points->channels.push_back(v_of_point);
             feature_points->channels.push_back(velocity_x_of_point);
             feature_points->channels.push_back(velocity_y_of_point);
+
+            features_camPre = features_cam;
+            
+
             
             bag.write("/feature_tracker/feature", time_nowCam, feature_points);
+            // printf("write feature_points: %ld \n", feature_points->points.size());
 
             if(t_cam < 0.0001){
                 prev_pts = cur_pts;

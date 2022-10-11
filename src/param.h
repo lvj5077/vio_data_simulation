@@ -41,7 +41,7 @@ public:
     double acc_noise_sigma = 5.3e-4;      //　m/(s^2) * 1/sqrt(hz)
 
 
-    double pixel_noise = 1.0;              // 1 pixel noise
+    double pixel_noise = 0.0;              // 1 pixel noise
 
     // cam f
     double fx = 484.85;

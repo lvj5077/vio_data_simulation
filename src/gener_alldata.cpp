@@ -350,7 +350,7 @@ int main(int argc, char** argv)
             track_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3; 
             track_msg.header.stamp = time_nowCam;
             track_msg.image = trackImg; 
-            bag.write("/feature_tracker/feature_img", time_nowCam, track_msg); 
+            // bag.write("/feature_tracker/feature_img", time_nowCam, track_msg); 
 
             pub_cam = false;
             old_pts = cur_pts;

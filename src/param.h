@@ -21,7 +21,7 @@ public:
     double t_start = 0;
     // double t_end = 180;  // seconds
 
-    double t_end = 60;  // seconds
+    double t_end = 30;  // seconds
 
     // // noise
     // double gyro_bias_sigma = 0.00005;

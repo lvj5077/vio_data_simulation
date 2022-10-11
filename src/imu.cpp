@@ -72,6 +72,50 @@ void IMU::addIMUnoise(MotionData& data)
 
 }
 
+// MotionData IMU::MotionModel(double t)
+// {
+
+//     MotionData data;
+//     // param
+//     float ellipse_x = 15;
+//     float ellipse_y = 20;
+//     float z = 1;           // z轴做sin运动
+//     float K1 = 10;          // z轴的正弦频率是x，y的k1倍
+//     float K = M_PI/ 10;    // 20 * K = 2pi 　　由于我们采取的是时间是20s, 系数K控制yaw正好旋转一圈，运动一周
+
+//     // translation
+//     // twb:  body frame in world frame
+//     Eigen::Vector3d position( ellipse_x * cos( K * t) + 5, ellipse_y * sin( K * t) + 5,  z * sin( K1 * K * t ) + 5);
+//     Eigen::Vector3d dp(- K * ellipse_x * sin(K*t),  K * ellipse_y * cos(K*t), z*K1*K * cos(K1 * K * t));              // position导数　in world frame
+//     double K2 = K*K;
+//     Eigen::Vector3d ddp( -K2 * ellipse_x * cos(K*t),  -K2 * ellipse_y * sin(K*t), -z*K1*K1*K2 * sin(K1 * K * t));     // position二阶导数
+
+//     // Rotation
+//     double k_roll = 0.1;
+//     double k_pitch = 0.2;
+//     Eigen::Vector3d eulerAngles(k_roll * cos(t) , k_pitch * sin(t) , K*t );   // roll ~ [-0.2, 0.2], pitch ~ [-0.3, 0.3], yaw ~ [0,2pi]
+//     Eigen::Vector3d eulerAnglesRates(-k_roll * sin(t) , k_pitch * cos(t) , K);      // euler angles 的导数
+
+// //    Eigen::Vector3d eulerAngles(0.0,0.0, K*t );   // roll ~ 0, pitch ~ 0, yaw ~ [0,2pi]
+// //    Eigen::Vector3d eulerAnglesRates(0.,0. , K);      // euler angles 的导数
+
+//     Eigen::Matrix3d Rwb = euler2Rotation(eulerAngles);         // body frame to world frame
+//     Eigen::Vector3d imu_gyro = eulerRates2bodyRates(eulerAngles) * eulerAnglesRates;   //  euler rates trans to body gyro
+
+//     Eigen::Vector3d gn (0,0,-9.81);                                   //  gravity in navigation frame(ENU)   ENU (0,0,-9.81)  NED(0,0,9,81)
+//     Eigen::Vector3d imu_acc = Rwb.transpose() * ( ddp -  gn );  //  Rbw * Rwn * gn = gs
+
+//     data.imu_gyro = imu_gyro;
+//     data.imu_acc = imu_acc;
+//     data.Rwb = Rwb;
+//     data.twb = position;
+//     data.imu_velocity = dp;
+//     data.timestamp = t;
+//     return data;
+
+// }
+
+
 MotionData IMU::MotionModel(double t)
 {
 
@@ -83,18 +127,169 @@ MotionData IMU::MotionModel(double t)
     float K1 = 10;          // z轴的正弦频率是x，y的k1倍
     float K = M_PI/ 10;    // 20 * K = 2pi 　　由于我们采取的是时间是20s, 系数K控制yaw正好旋转一圈，运动一周
 
-    // translation
-    // twb:  body frame in world frame
-    Eigen::Vector3d position( ellipse_x * cos( K * t) + 5, ellipse_y * sin( K * t) + 5,  z * sin( K1 * K * t ) + 5);
-    Eigen::Vector3d dp(- K * ellipse_x * sin(K*t),  K * ellipse_y * cos(K*t), z*K1*K * cos(K1 * K * t));              // position导数　in world frame
     double K2 = K*K;
-    Eigen::Vector3d ddp( -K2 * ellipse_x * cos(K*t),  -K2 * ellipse_y * sin(K*t), -z*K1*K1*K2 * sin(K1 * K * t));     // position二阶导数
 
-    // Rotation
+    Eigen::Vector3d position;
+    Eigen::Vector3d dp;
+    Eigen::Vector3d ddp;
+
     double k_roll = 0.1;
     double k_pitch = 0.2;
-    Eigen::Vector3d eulerAngles(k_roll * cos(t) , k_pitch * sin(t) , K*t );   // roll ~ [-0.2, 0.2], pitch ~ [-0.3, 0.3], yaw ~ [0,2pi]
-    Eigen::Vector3d eulerAnglesRates(-k_roll * sin(t) , k_pitch * cos(t) , K);      // euler angles 的导数
+
+    Eigen::Vector3d eulerAngles;
+    Eigen::Vector3d eulerAnglesRates;
+
+
+    // translation
+    // twb:  body frame in world frame
+    double k_yaw = 0.2;
+    double ellipse_init = 4;
+    if(t<5){ 
+        // initialization
+        
+        K = 4*M_PI/ 10; 
+        
+        position.x() = ellipse_init * cos( K * t) - ellipse_x - ellipse_init;
+        position.y() = ellipse_init * sin( K * t) + ellipse_y/5. - 0.5*K * ellipse_init ;
+        position.z() = ellipse_init * sin( K * t) + z - 0.5*K * ellipse_init ;
+
+        dp.x() = - K * ellipse_init * sin(K*t);
+        dp.y() = K * ellipse_init * cos(K*t);
+        dp.z() = K * ellipse_init * cos(K*t);
+
+        ddp.x() = -K*K * ellipse_init * cos(K*t);
+        ddp.y() = -K*K * ellipse_init * sin(K*t);
+        ddp.z() = -K*K * ellipse_init * sin(K*t);
+
+        
+        eulerAngles.x() = k_roll * cos(K*t);
+        eulerAngles.y() = k_pitch * cos(K*t);
+        eulerAngles.z() = k_yaw * cos(K*t) - k_yaw;
+
+        eulerAnglesRates.x() = -k_roll * K * sin(K*t);
+        eulerAnglesRates.y() = -k_pitch * K * sin(K*t);
+        eulerAnglesRates.z() = -k_yaw * K * sin(K*t);
+    }
+
+    if(t>=5 && t <6){ 
+        K = 4*M_PI/ 10; 
+        // slow down
+
+        position.x() = - ellipse_x;
+        position.y() = K * ellipse_init*(t-5.) - 0.5*K * ellipse_init*(t-5.)*(t-5.) + ellipse_y/5. - 0.5*K * ellipse_init ;
+        position.z() = K * ellipse_init*(t-5.) - 0.5*K * ellipse_init*(t-5.)*(t-5.) + z - 0.5*K * ellipse_init ;
+
+        dp.x() = 0.0;
+        dp.y() = K * ellipse_init*(6.-t);
+        dp.z() = K * ellipse_init*(6.-t);
+
+        ddp.x() = 0.0;
+        ddp.y() = -K * ellipse_init;
+        ddp.z() = -K * ellipse_init;
+
+
+
+        eulerAngles.x() = k_roll;
+        eulerAngles.y() = k_pitch;
+        eulerAngles.z() = 0.0;
+
+        eulerAnglesRates.x() = 0.0;
+        eulerAnglesRates.y() = 0.0;
+        eulerAnglesRates.z() = 0.0;
+    }
+
+    K = M_PI/ 10;
+    if(t>=6. && t <9.){ 
+        // pause for sycn
+        K = 4*M_PI/ 10;
+        position.x() = - ellipse_x;
+        position.y() = ellipse_y/5.;
+        position.z() = z;
+
+        dp.x() = 0.0;
+        dp.y() = 0.0;
+        dp.z() = 0.0;
+
+        ddp.x() = 0.0;
+        ddp.y() = 0.0;
+        ddp.z() = 0.0;
+
+        eulerAngles.x() = k_roll;
+        eulerAngles.y() = k_pitch;
+        eulerAngles.z() = 0.0;
+
+        eulerAnglesRates.x() = 0.0;
+        eulerAnglesRates.y() = 0.0;
+        eulerAnglesRates.z() = 0.0;
+    }
+
+    
+    // double t_temp = t - 15.;
+
+    if(t>=9 && t <10)
+    {
+        double tempK = M_PI/2.;
+        position.x() = - ellipse_x;
+        position.y() = ellipse_y *cos( tempK* (t-9.))/5. ;
+        position.z() = z ;
+
+        dp.x() = 0.0;
+        dp.y() = -ellipse_y *tempK*sin(tempK * (t-9.))/5. ;
+        dp.z() = 0.0;
+
+        ddp.x() = 0.0;
+        ddp.y() = -ellipse_y *tempK*tempK*cos(tempK * (t-9.))/5. ;
+        ddp.z() = 0.0;
+
+        k_roll = 0.1;
+        k_pitch = 0.2;
+
+
+        eulerAngles.x() = k_roll;
+        eulerAngles.y() = k_pitch;
+        
+        eulerAngles.z() = 0.5*K*(t-9.0)*(t-9.0);
+
+        eulerAnglesRates.x() = 0.0;
+        eulerAnglesRates.y() = 0.0;
+        eulerAnglesRates.z() = K*(t-9.0);
+    }
+
+    if(t>=10)
+    {
+        position.x() = ellipse_x * cos( K * t) ;
+        position.y() = ellipse_y * sin( K * t) ;
+        position.z() = z * cos( K1 * K * t ) ;
+
+        dp.x() = - K * ellipse_x * sin(K*t); // 0
+        dp.y() = K * ellipse_y * cos(K*t);   // 1
+        dp.z() = -z*K1*K * sin(K1 * K * t);   // 1
+
+        ddp.x() = -K2 * ellipse_x * cos(K*t);
+        ddp.y() = -K2 * ellipse_y * sin(K*t);
+        ddp.z() = -z*K1*K1*K2 * cos(K1 * K * t);
+
+        k_roll = 0.1;
+        k_pitch = 0.2;
+
+        eulerAngles.x() = k_roll * cos(t-10.);
+        eulerAngles.y() = k_pitch * cos(t-10.);
+        eulerAngles.z() = K*(t-10)+0.5*K;
+
+        eulerAnglesRates.x() = -k_roll * sin(t-10.);
+        eulerAnglesRates.y() = -k_pitch * sin(t-10.);
+        eulerAnglesRates.z() = K;
+
+    }
+
+    // Eigen::Vector3d position( ellipse_x * cos( K * t) + 5, ellipse_y * sin( K * t) + 5,  z * sin( K1 * K * t ) + 5);
+    // Eigen::Vector3d dp(- K * ellipse_x * sin(K*t),  K * ellipse_y * cos(K*t), z*K1*K * cos(K1 * K * t));              // position导数　in world frame
+    // Eigen::Vector3d ddp( -K2 * ellipse_x * cos(K*t),  -K2 * ellipse_y * sin(K*t), -z*K1*K1*K2 * sin(K1 * K * t));     // position二阶导数
+
+    // Rotation
+
+    // Eigen::Vector3d eulerAngles(k_roll * cos(t) , k_pitch * sin(t) , K*t );   // roll ~ [-0.2, 0.2], pitch ~ [-0.3, 0.3], yaw ~ [0,2pi]
+    // Eigen::Vector3d eulerAnglesRates(-k_roll * sin(t) , k_pitch * cos(t) , K);      // euler angles 的导数
 
 //    Eigen::Vector3d eulerAngles(0.0,0.0, K*t );   // roll ~ 0, pitch ~ 0, yaw ~ [0,2pi]
 //    Eigen::Vector3d eulerAnglesRates(0.,0. , K);      // euler angles 的导数
@@ -168,8 +363,14 @@ void IMU::testImu(std::vector<MotionData>imudata, std::string dist)
         //            <<Pwb(1)<<" "
         //            <<Pwb(2)<<" "
         //            <<std::endl;
-        save_points<<imupose.timestamp<<" " << Pwb(0) << " " << Pwb(1) << " " << Pwb(2) <<" " <<Qwb.x() << " " << Qwb.y() << " " << Qwb.z() << " " << Qwb.w() << std::endl;
+        // save_points<<imupose.timestamp<<" " << Pwb(0) << " " << Pwb(1) << " " << Pwb(2) <<" " <<Qwb.x() << " " << Qwb.y() << " " << Qwb.z() << " " << Qwb.w() << std::endl;
 
+        // printf("imupose.timestamp: %f \n", imupose.timestamp);
+
+        save_points.precision(9);
+        save_points <<imupose.timestamp<<" ";
+        save_points.precision(5);
+        save_points << Pwb(0) << " " << Pwb(1) << " " << Pwb(2) <<" " <<Qwb.x() << " " << Qwb.y() << " " << Qwb.z() << " " << Qwb.w() <<std::endl;
     }
 
     std::cout<<"test　end"<<std::endl;

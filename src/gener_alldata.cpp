@@ -208,7 +208,7 @@ int main(int argc, char** argv)
                 prev_idx++;
             }
             // cur_pts size
-            printf("tracked cur_pts size: %ld || need %ld more featurs  ", cur_pts.size(), params.feature_num - cur_pts.size());
+            // printf("tracked cur_pts size: %ld || need %ld more featurs  ", cur_pts.size(), params.feature_num - cur_pts.size());
 
             cv::Mat trackImg = cv::Mat::zeros(params.image_h, params.image_w, CV_8UC3);
             for (size_t i = 0; i < cur_pts.size(); ++i) {
@@ -262,7 +262,7 @@ int main(int argc, char** argv)
                 }
             }
 
-            printf("cur_pts size: %ld || total %ld featurs \n", cur_pts.size(), allPoints_word.size());
+            // printf("cur_pts size: %ld || total %ld featurs \n", cur_pts.size(), allPoints_word.size());
 
             int cur_idx = 0;
             for (int i = 0; i < allPoints_word.size(); i++){
@@ -339,7 +339,8 @@ int main(int argc, char** argv)
 
             
             bag.write("/feature_tracker/feature", time_nowCam, feature_points);
-            // printf("write feature_points: %ld \n", feature_points->points.size());
+
+            printf("feature_points->header.stamp.toSec():   %f\n", feature_points->header.stamp.toSec());
 
             if(t_cam < 0.0001){
                 prev_pts = cur_pts;
@@ -358,7 +359,8 @@ int main(int argc, char** argv)
 
         // create imu data && add imu noise
         MotionData data = imuGen.MotionModel(t);
-        data.timestamp = t + begin;
+        // data.timestamp = t + begin;
+        data.timestamp = t;
         imudata.push_back(data);
         MotionData data_noise = data;
         imuGen.addIMUnoise(data_noise);
@@ -393,8 +395,8 @@ int main(int argc, char** argv)
         imu_data.angular_velocity.z = data_noise.imu_gyro(2);
 
         // std::cout << "cam.timestamp = " <<  << imu_data.header.stamp.toSec() << std::endl;
-        // printf("imu_data.header.stamp =  %f acc.x = %f acc.y = %f acc.z = %f\n", imu_data.header.stamp.toSec(),
-        //  imu_data.linear_acceleration.x, imu_data.linear_acceleration.y, imu_data.linear_acceleration.z);
+        
+        printf("imu_data.header.stamp =                 %f\n", imu_data.header.stamp.toSec());
         bag.write("/imu0", time_now, imu_data);
 
         t += 1.0/params.imu_frequency;

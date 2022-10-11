@@ -143,7 +143,7 @@ MotionData IMU::MotionModel(double t)
     // translation
     // twb:  body frame in world frame
     double k_yaw = 0.2;
-    double ellipse_init = 4;
+    double ellipse_init = 1;
     if(t<5){ 
         // initialization
         

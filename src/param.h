@@ -21,29 +21,27 @@ public:
     double t_start = 0;
     // double t_end = 180;  // seconds
 
-    double t_end = 30;  // seconds
+    double t_end = 180;  // seconds
 
-    // // noise
-    // double gyro_bias_sigma = 0.00005;
-    // double acc_bias_sigma = 0.0005;
 
-    double gyro_bias_sigma = 8.5e-7;
-    double acc_bias_sigma = 1.5e-5;
 
-    double gyro_noise_sigma = 1.5e-4;    // rad/s * 1/sqrt(hz)
-    double acc_noise_sigma = 5.3e-4;      //　m/(s^2) * 1/sqrt(hz)
-
-    // double gyro_noise_sigma = 0.015;    // rad/s * 1/sqrt(hz)
-    // double acc_noise_sigma = 0.019;      //　m/(s^2) * 1/sqrt(hz)
-
+    // double gyro_bias_sigma = 8.5e-7;
+    // double acc_bias_sigma = 1.5e-5;
+    // double gyro_noise_sigma = 1.5e-4;    // rad/s * 1/sqrt(hz)
+    // double acc_noise_sigma = 5.3e-4;      //　m/(s^2) * 1/sqrt(hz)
 
     // double gyro_bias_sigma = 0.0;
     // double acc_bias_sigma = 0.0;
     // double gyro_noise_sigma = 0.0;
     // double acc_noise_sigma = 0.0;
 
+    double gyro_bias_sigma = 8.5e-7;
+    double acc_bias_sigma = 1.5e-5;
+    double gyro_noise_sigma = 1.5e-4;    // rad/s * 1/sqrt(hz)
+    double acc_noise_sigma = 5.3e-4;      //　m/(s^2) * 1/sqrt(hz)
 
-    double pixel_noise = 0.0;              // 1 pixel noise
+
+    double pixel_noise = 1.0;              // 1 pixel noise
 
     // cam f
     double fx = 484.85;

@@ -1,8 +1,14 @@
-增加了特征点的发布
+# 增加了特征点的发布
+以VINS-Mono feature_points为格式 发布特征点，point.z 作为depth储存 （-1为无depth）
+相机朝外看，避免反向投影
 
-![demo pic2]([[https://github.com/lvj5077/vio_data_simulation/blob/390099c4f6f5845894f8da4042c39760e17904f0/sim.png?raw=true)]
 
-# imusim with ROS bag
+# 增加了初始化轨迹 
+t:6s~9s 为静止片段，用于位姿对齐，更方便比较ape
+
+![demo pic2](https://github.com/lvj5077/vio_data_simulation/blob/390099c4f6f5845894f8da4042c39760e17904f0/sim.png?raw=true)
+
+# imu sim with ROS bag
 imu 和 cam 数据仿真, 用于vio算法测试，代码有任何问题都欢迎交流 heyijia_2013@163.com，另可内推旷视科技SLAM组。
 
 ![demo pic](https://github.com/HeYijia/vio_data_simulation/blob/master/bin/demo.png?raw=true)

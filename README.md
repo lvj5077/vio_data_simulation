@@ -1,6 +1,6 @@
 增加了特征点的发布
 
-
+[![demo pic2]([[https://github.com/lvj5077/vio_data_simulation/blob/390099c4f6f5845894f8da4042c39760e17904f0/sim.png?raw=true)]
 
 # imusim with ROS bag
 imu 和 cam 数据仿真, 用于vio算法测试，代码有任何问题都欢迎交流 heyijia_2013@163.com，另可内推旷视科技SLAM组。

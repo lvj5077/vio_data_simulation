@@ -1,5 +1,6 @@
 # 增加了特征点的发布
 以VINS-Mono feature_points为格式 发布特征点，point.z 作为depth储存 （-1为无depth）
+
 相机朝外看，避免反向投影
 
 

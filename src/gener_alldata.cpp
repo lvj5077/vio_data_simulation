@@ -208,7 +208,7 @@ int main(int argc, char** argv)
                 prev_idx++;
             }
             // cur_pts size
-            // printf("tracked cur_pts size: %ld || need %ld more featurs  ", cur_pts.size(), params.feature_num - cur_pts.size());
+            // printf("tracked cur_pts size: %ld || need %ld more featurs  \n", cur_pts.size(), params.feature_num - cur_pts.size());
 
             cv::Mat trackImg = cv::Mat::zeros(params.image_h, params.image_w, CV_8UC3);
             for (size_t i = 0; i < cur_pts.size(); ++i) {
@@ -415,8 +415,8 @@ int main(int argc, char** argv)
     imuGen.init_twb_ = imudata.at(0).twb;
     imuGen.init_Rwb_ = imudata.at(0).Rwb;
     save_Pose_asTUM("/home/jin/house_model/imu_pose.txt", imudata);
-    save_Pose("/home/jin/house_model/imu_pose_All.txt", imudata_noise);
-    save_Pose_asTUM("/home/jin/house_model/imu_pose_noise.txt", imudata_noise);
+    save_Pose("/home/jin/house_model/imu_noise_All.txt", imudata_noise);
+    save_Pose("/home/jin/house_model/imu_All.txt", imudata);
 
     imuGen.testImu(imudata, "/home/jin/house_model/imu_int_pose.txt");     // test the imu data, integrate the imu data to generate the imu trajecotry
     imuGen.testImu(imudata_noise, "/home/jin/house_model/imu_int_pose_noise.txt");

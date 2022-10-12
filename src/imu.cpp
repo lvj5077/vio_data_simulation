@@ -120,11 +120,14 @@ MotionData IMU::MotionModel(double t)
 {
 
     MotionData data;
+    data.timestamp = t;
+    
     // param
-    float ellipse_x = 15;
-    float ellipse_y = 20;
-    float z = 1;           // z轴做sin运动
+    float ellipse_x = 12;
+    float ellipse_y = 8;
+    float z = 0.2;           // z轴做sin运动
     float K1 = 10;          // z轴的正弦频率是x，y的k1倍
+    
     float K = M_PI/ 10;    // 20 * K = 2pi 　　由于我们采取的是时间是20s, 系数K控制yaw正好旋转一圈，运动一周
 
     double K2 = K*K;
@@ -133,8 +136,9 @@ MotionData IMU::MotionModel(double t)
     Eigen::Vector3d dp;
     Eigen::Vector3d ddp;
 
-    double k_roll = 0.1;
-    double k_pitch = 0.2;
+    double k_roll = 20*M_PI/180;
+    double k_pitch = 20*M_PI/180;
+    double k_yaw = 20*M_PI/180;
 
     Eigen::Vector3d eulerAngles;
     Eigen::Vector3d eulerAnglesRates;
@@ -142,7 +146,7 @@ MotionData IMU::MotionModel(double t)
 
     // translation
     // twb:  body frame in world frame
-    double k_yaw = 0.2;
+    
     double ellipse_init = 1;
     if(t<5){ 
         // initialization
@@ -224,61 +228,106 @@ MotionData IMU::MotionModel(double t)
     }
 
     
-    // double t_temp = t - 15.;
+    // circle
+    // if(t>=9 && t <10)
+    // {
+    //     double tempK = M_PI/2.;
+    //     position.x() = - ellipse_x;
+    //     position.y() = ellipse_y *cos( tempK* (t-9.))/5. ;
+    //     position.z() = z ;
 
+    //     dp.x() = 0.0;
+    //     dp.y() = -ellipse_y *tempK*sin(tempK * (t-9.))/5. ;
+    //     dp.z() = 0.0;
+
+    //     ddp.x() = 0.0;
+    //     ddp.y() = -ellipse_y *tempK*tempK*cos(tempK * (t-9.))/5. ;
+    //     ddp.z() = 0.0;
+
+    //     eulerAngles.x() = k_roll;
+    //     eulerAngles.y() = k_pitch;
+        
+    //     eulerAngles.z() = 0.5*K*(t-9.0)*(t-9.0);
+
+    //     eulerAnglesRates.x() = 0.0;
+    //     eulerAnglesRates.y() = 0.0;
+    //     eulerAnglesRates.z() = K*(t-9.0);
+    // }
+
+    // if(t>=10)
+    // {
+    //     position.x() = ellipse_x * cos( K * t) ;
+    //     position.y() = ellipse_y * sin( K * t) ;
+    //     position.z() = z * cos( K1 * K * t ) ;
+
+    //     dp.x() = - K * ellipse_x * sin(K*t); // 0
+    //     dp.y() = K * ellipse_y * cos(K*t);   // 1
+    //     dp.z() = -z*K1*K * sin(K1 * K * t);   // 1
+
+    //     ddp.x() = -K2 * ellipse_x * cos(K*t);
+    //     ddp.y() = -K2 * ellipse_y * sin(K*t);
+    //     ddp.z() = -z*K1*K1*K2 * cos(K1 * K * t);
+
+    //     eulerAngles.x() = k_roll * cos(t-10.);
+    //     eulerAngles.y() = k_pitch * cos(t-10.);
+    //     eulerAngles.z() = K*(t-10)+0.5*K;
+
+    //     eulerAnglesRates.x() = -k_roll * sin(t-10.);
+    //     eulerAnglesRates.y() = -k_pitch * sin(t-10.);
+    //     eulerAnglesRates.z() = K;
+
+    // }
+
+    // sin wave
     if(t>=9 && t <10)
     {
         double tempK = M_PI/2.;
         position.x() = - ellipse_x;
-        position.y() = ellipse_y *cos( tempK* (t-9.))/5. ;
+        position.y() = ellipse_y/5. ;
         position.z() = z ;
 
         dp.x() = 0.0;
-        dp.y() = -ellipse_y *tempK*sin(tempK * (t-9.))/5. ;
+        dp.y() = 0.0;
         dp.z() = 0.0;
 
         ddp.x() = 0.0;
-        ddp.y() = -ellipse_y *tempK*tempK*cos(tempK * (t-9.))/5. ;
+        ddp.y() = 0.0;
         ddp.z() = 0.0;
-
-        k_roll = 0.1;
-        k_pitch = 0.2;
-
 
         eulerAngles.x() = k_roll;
         eulerAngles.y() = k_pitch;
         
-        eulerAngles.z() = 0.5*K*(t-9.0)*(t-9.0);
+        eulerAngles.z() = 0.0;
 
         eulerAnglesRates.x() = 0.0;
         eulerAnglesRates.y() = 0.0;
-        eulerAnglesRates.z() = K*(t-9.0);
+        eulerAnglesRates.z() = 0.0;
     }
 
     if(t>=10)
     {
-        position.x() = ellipse_x * cos( K * t) ;
-        position.y() = ellipse_y * sin( K * t) ;
-        position.z() = z * cos( K1 * K * t ) ;
+        t = t-10.;
+        position.x() = sin(t)-t - ellipse_x;
+        position.y() = 0.5*sin(t-sin(t)) + ellipse_y/5.;
+        position.z() = z*cos(2*t);
 
-        dp.x() = - K * ellipse_x * sin(K*t); // 0
-        dp.y() = K * ellipse_y * cos(K*t);   // 1
-        dp.z() = -z*K1*K * sin(K1 * K * t);   // 1
+        dp.x() = cos(t) -1; // 0
+        dp.y() = -0.5*( cos(t) -1 )*cos(t - sin(t) );   // 1
+        dp.z() = -2*z*sin(2*t);   // 1
 
-        ddp.x() = -K2 * ellipse_x * cos(K*t);
-        ddp.y() = -K2 * ellipse_y * sin(K*t);
-        ddp.z() = -z*K1*K1*K2 * cos(K1 * K * t);
+        ddp.x() = -sin(t);
+        ddp.y() = 0.5 *sin(t) *cos(t-sin(t))-0.5*sin(t-sin(t))*(cos(t)-1)*(cos(t)-1);
+        ddp.z() = -4*z*cos(2*t);
 
-        k_roll = 0.1;
-        k_pitch = 0.2;
+        eulerAngles.x() = k_roll * cos(t);
+        eulerAngles.y() = k_pitch * cos(t);
+        eulerAngles.z() = k_yaw*cos(t)-k_yaw;
 
-        eulerAngles.x() = k_roll * cos(t-10.);
-        eulerAngles.y() = k_pitch * cos(t-10.);
-        eulerAngles.z() = K*(t-10)+0.5*K;
+        eulerAnglesRates.x() = -k_roll * sin(t);
+        eulerAnglesRates.y() = -k_pitch * sin(t);
+        eulerAnglesRates.z() = -k_yaw*sin(t);
 
-        eulerAnglesRates.x() = -k_roll * sin(t-10.);
-        eulerAnglesRates.y() = -k_pitch * sin(t-10.);
-        eulerAnglesRates.z() = K;
+        t = t+10.;
 
     }
 
@@ -305,7 +354,7 @@ MotionData IMU::MotionModel(double t)
     data.Rwb = Rwb;
     data.twb = position;
     data.imu_velocity = dp;
-    data.timestamp = t;
+
     return data;
 
 }

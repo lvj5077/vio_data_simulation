@@ -15,13 +15,13 @@ public:
 
     // time
     int imu_frequency = 200;
-    int cam_frequency = 30;
+    int cam_frequency = 10;
     double imu_timestep = 1./imu_frequency;
     double cam_timestep = 1./cam_frequency;
     double t_start = 0;
     // double t_end = 180;  // seconds
 
-    double t_end = 180;  // seconds
+    double t_end = 300;  // seconds
 
 
 
@@ -35,10 +35,45 @@ public:
     // double gyro_noise_sigma = 0.0;
     // double acc_noise_sigma = 0.0;
 
-    double gyro_bias_sigma = 8.5e-7;
-    double acc_bias_sigma = 1.5e-5;
-    double gyro_noise_sigma = 1.5e-4;    // rad/s * 1/sqrt(hz)
-    double acc_noise_sigma = 5.3e-4;      //　m/(s^2) * 1/sqrt(hz)
+// acc_n: 0.01 # 0.119 #0.1  #0.1        # accelerometer measurement noise standard deviation. #0.2   0.04
+// gyr_n: 0.003 #0.0208 # 0.01         # gyroscope measurement noise standard deviation.     #0.05  0.004
+// acc_w: 0.0015 # 0.000535 #0.001        # accelerometer bias random work noise standard deviation.  #0.02
+// gyr_w: 0.000087 #
+
+    // double acc_noise_sigma = 5.e-3;      //　m/(s^2) * 1/sqrt(hz)
+    // double gyro_noise_sigma = 5.e-4;    // rad/s * 1/sqrt(hz)
+
+    // double acc_bias_sigma = 1.5e-4;
+    // double gyro_bias_sigma = 8.5e-6;
+
+// # Values from allan plots
+// # sequence: dataset-calib-imu-static2.bag (full data range)
+// #accelerometer_noise_density: 0.0014     # m/s^1.5
+// #accelerometer_random_walk:   0.000086   # m/s^2.5
+// #gyroscope_noise_density:     0.000080   # rad/s^0.5
+// #gyroscope_random_walk:       0.0000022  # rad/s^1.5
+
+// # Inflated values (to account for unmodelled effects)
+// # Those values work well with Kalibr cam-imu calibration.
+// #  - white noise multiplied by 2
+// #  - bias random walk multiplied by 10
+// accelerometer_noise_density: 0.0028     # m/s^1.5
+// accelerometer_random_walk:   0.00086    # m/s^2.5
+// gyroscope_noise_density:     0.00016    # rad/s^0.5
+// gyroscope_random_walk:       0.000022   # rad/s^1.5
+
+    // double acc_noise_sigma = 0.0028;      //　m/(s^2) * 1/sqrt(hz)
+    // double gyro_noise_sigma = 0.00016;    // rad/s * 1/sqrt(hz)
+
+    // double acc_bias_sigma = 0.00086;
+    // double gyro_bias_sigma = 0.000022;
+
+    double acc_noise_sigma = 0.005;      //　m/(s^2) * 1/sqrt(hz)
+    double gyro_noise_sigma = 0.0015;    // rad/s * 1/sqrt(hz)
+
+    double acc_bias_sigma = 0.00015;
+    double gyro_bias_sigma = 0.000015;
+
 
 
     double pixel_noise = 0.0;              // 1 pixel noise

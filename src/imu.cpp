@@ -148,6 +148,7 @@ MotionData IMU::MotionModel(double t)
     // twb:  body frame in world frame
     
     double ellipse_init = 1;
+    t = t - 5.; // add anothor circular motion for initialisation
     if(t<5){ 
         // initialization
         
@@ -278,56 +279,108 @@ MotionData IMU::MotionModel(double t)
 
     // }
 
-    // sin wave
+    // // sin wave
+    // if(t>=9 && t <10)
+    // {
+    //     double tempK = M_PI/2.;
+    //     position.x() = - ellipse_x;
+    //     position.y() = ellipse_y/5. ;
+    //     position.z() = z ;
+
+    //     dp.x() = 0.0;
+    //     dp.y() = 0.0;
+    //     dp.z() = 0.0;
+
+    //     ddp.x() = 0.0;
+    //     ddp.y() = 0.0;
+    //     ddp.z() = 0.0;
+
+    //     eulerAngles.x() = k_roll;
+    //     eulerAngles.y() = k_pitch;
+        
+    //     eulerAngles.z() = 0.0;
+
+    //     eulerAnglesRates.x() = 0.0;
+    //     eulerAnglesRates.y() = 0.0;
+    //     eulerAnglesRates.z() = 0.0;
+    // }
+
+    // double y_width = 0.5;
+
+    // if(t>=10)
+    // {
+    //     t = t-10.;
+    //     position.x() = sin(t)-t - ellipse_x;
+    //     position.y() = y_width*sin(t-sin(t)) + ellipse_y/5.;
+    //     position.z() = z*cos(2*t);
+
+    //     dp.x() = cos(t) -1; // 0
+    //     dp.y() = -y_width*( cos(t) -1 )*cos(t - sin(t) );   // 1
+    //     dp.z() = -2*z*sin(2*t);   // 1
+
+    //     ddp.x() = -sin(t);
+    //     ddp.y() = y_width *sin(t) *cos(t-sin(t))-y_width*sin(t-sin(t))*(cos(t)-1)*(cos(t)-1);
+    //     ddp.z() = -4*z*cos(2*t);
+
+    //     eulerAngles.x() = k_roll * cos(1.2*t);
+    //     eulerAngles.y() = k_pitch * cos(0.8*t);
+    //     eulerAngles.z() = k_yaw*cos(t)-k_yaw;
+
+    //     eulerAnglesRates.x() = -1.2*k_roll * sin(1.2*t);
+    //     eulerAnglesRates.y() = -0.8*k_pitch * sin(0.8*t);
+    //     eulerAnglesRates.z() = -k_yaw*sin(t);
+
+    //     t = t+10.;
+
+    // }
+
+// spiral
     if(t>=9 && t <10)
     {
         double tempK = M_PI/2.;
         position.x() = - ellipse_x;
-        position.y() = ellipse_y/5. ;
-        position.z() = z ;
+        position.y() = ellipse_y *cos( tempK* (t-9.))/5. ;
+        position.z() = z + 0.5*(t-9.0)*(t-9.0);
 
         dp.x() = 0.0;
-        dp.y() = 0.0;
-        dp.z() = 0.0;
+        dp.y() = -ellipse_y *tempK*sin(tempK * (t-9.))/5. ;
+        dp.z() = t - 9.0;
 
         ddp.x() = 0.0;
-        ddp.y() = 0.0;
-        ddp.z() = 0.0;
+        ddp.y() = -ellipse_y *tempK*tempK*cos(tempK * (t-9.))/5. ;
+        ddp.z() = 1.0;
 
         eulerAngles.x() = k_roll;
         eulerAngles.y() = k_pitch;
         
-        eulerAngles.z() = 0.0;
+        eulerAngles.z() = 0.5*K*(t-9.0)*(t-9.0);
 
         eulerAnglesRates.x() = 0.0;
         eulerAnglesRates.y() = 0.0;
-        eulerAnglesRates.z() = 0.0;
+        eulerAnglesRates.z() = K*(t-9.0);
     }
 
     if(t>=10)
     {
-        t = t-10.;
-        position.x() = sin(t)-t - ellipse_x;
-        position.y() = 0.5*sin(t-sin(t)) + ellipse_y/5.;
-        position.z() = z*cos(2*t);
+        position.x() = ellipse_x * cos( K * t) ;
+        position.y() = ellipse_y * sin( K * t) ;
+        position.z() = t + cos( t-10. ) - 10.5;
 
-        dp.x() = cos(t) -1; // 0
-        dp.y() = -0.5*( cos(t) -1 )*cos(t - sin(t) );   // 1
-        dp.z() = -2*z*sin(2*t);   // 1
+        dp.x() = - K * ellipse_x * sin(K*t); // 0
+        dp.y() = K * ellipse_y * cos(K*t);   // 1
+        dp.z() = 1 - sin( t-10. );   // 1
 
-        ddp.x() = -sin(t);
-        ddp.y() = 0.5 *sin(t) *cos(t-sin(t))-0.5*sin(t-sin(t))*(cos(t)-1)*(cos(t)-1);
-        ddp.z() = -4*z*cos(2*t);
+        ddp.x() = -K2 * ellipse_x * cos(K*t);
+        ddp.y() = -K2 * ellipse_y * sin(K*t);
+        ddp.z() = -cos(t-10.);
 
-        eulerAngles.x() = k_roll * cos(t);
-        eulerAngles.y() = k_pitch * cos(t);
-        eulerAngles.z() = k_yaw*cos(t)-k_yaw;
+        eulerAngles.x() = k_roll * cos(t-10.);
+        eulerAngles.y() = k_pitch * cos(t-10.);
+        eulerAngles.z() = K*(t-10)+0.5*K;
 
-        eulerAnglesRates.x() = -k_roll * sin(t);
-        eulerAnglesRates.y() = -k_pitch * sin(t);
-        eulerAnglesRates.z() = -k_yaw*sin(t);
-
-        t = t+10.;
+        eulerAnglesRates.x() = -k_roll * sin(t-10.);
+        eulerAnglesRates.y() = -k_pitch * sin(t-10.);
+        eulerAnglesRates.z() = K;
 
     }
 
@@ -387,13 +440,42 @@ void IMU::testImu(std::vector<MotionData>imudata, std::string dist)
         dq.z() = dtheta_half.z();
         dq.normalize();
         
+    // #define euler 0
+
+    #ifdef euler
         /// imu 动力学模型 欧拉积分
-        Eigen::Vector3d acc_w = Qwb * (imupose.imu_acc) + gw;  // aw = Rwb * ( acc_body - acc_bias ) + gw
-        Qwb = Qwb * dq;
-        Pwb = Pwb + Vw * dt + 0.5 * dt * dt * acc_w;
-        Vw = Vw + acc_w * dt;
+         Eigen::Vector3d acc_w = Qwb * (imupose.imu_acc) + gw;  // aw = Rwb * ( acc_body - acc_bias ) + gw
+         Qwb = Qwb * dq;
+         Pwb = Pwb + Vw * dt + 0.5 * dt * dt * acc_w;
+         Vw = Vw + acc_w * dt;
         
-        /// 中值积分
+    #else
+        // std::cerr << "Begin to compute int with mid_val method." << std::endl;
+        /// 中值积分 
+        int pre_idx = i-1;
+        MotionData pre_pos = imudata[pre_idx];
+        // w = 1/2 * ((w_k - bk) + (w_k_1 - bk)) 
+        auto w_m = 0.5*(imupose.imu_gyro + pre_pos.imu_gyro);
+        Eigen::Quaterniond dq_m;
+        Eigen::Vector3d dtheta_half_m =  w_m * dt /2.0;
+        dq_m.w() = 1;
+        dq_m.x() = dtheta_half_m.x();
+        dq_m.y() = dtheta_half_m.y();
+        dq_m.z() = dtheta_half_m.z();
+        dq_m.normalize();
+
+        auto Qwb_n = Qwb * dq_m;
+        Eigen::Vector3d acc_w =  0.5 * (Qwb*(pre_pos.imu_acc)+gw + Qwb_n*(imupose.imu_acc)+ gw);
+        // aw =  1/2( Rwb*(acc_body_k - acc_bias) + gw + Rwb_k_1*(acc_body_k_1 - acc_bias) + gw ),
+        //   assume acc_bias not change overtime
+        
+        Pwb = Pwb +Vw * dt + 0.5 *  dt * dt * acc_w;
+        Vw = Vw + acc_w * dt;
+        // update Qwb;
+        Qwb = Qwb_n;
+
+        // 中值积分 done.
+    #endif 
 
         //　按着imu postion, imu quaternion , cam postion, cam quaternion 的格式存储，由于没有cam，所以imu存了两次
         // save_points<<imupose.timestamp<<" "

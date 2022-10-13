@@ -195,8 +195,8 @@ int main(int argc, char** argv)
                 pt.x = pc1(0)/pc1(2) * params.fx + params.cx;
                 pt.y = pc1(1)/pc1(2) * params.fy + params.cy;
 
-                pt.x = pt.x + dist(generator);
-                pt.y = pt.y + dist(generator);
+                // pt.x = pt.x + dist(generator);
+                // pt.y = pt.y + dist(generator);
 
                 if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h )
                 {
@@ -209,6 +209,10 @@ int main(int argc, char** argv)
             }
             // cur_pts size
             // printf("tracked cur_pts size: %ld || need %ld more featurs  \n", cur_pts.size(), params.feature_num - cur_pts.size());
+
+            if(cur_pts.size() < 100 ){
+                printf("Warning: too few features tracked || %ld \n", cur_pts.size());
+            }
 
             cv::Mat trackImg = cv::Mat::zeros(params.image_h, params.image_w, CV_8UC3);
             for (size_t i = 0; i < cur_pts.size(); ++i) {
@@ -235,8 +239,8 @@ int main(int argc, char** argv)
                 pt.x = params.cx + params.fx * pt_normal_x;
                 pt.y = params.cy + params.fy * pt_normal_y;
 
-                pt.x = pt.x + dist(generator);
-                pt.y = pt.y + dist(generator);
+                // pt.x = pt.x + dist(generator);
+                // pt.y = pt.y + dist(generator);
 
                 if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h && mask.at<uchar>(pt)==255 )
                 {
@@ -257,12 +261,17 @@ int main(int argc, char** argv)
                     p_c[3] = 1.;
 
                     Eigen::Vector4d p_w = Twc * p_c;
+                    // printf("p_w: %f %f %f %f \n", p_w(0), p_w(1), p_w(2), p_w(3));
+                    // printf("p_c: %f %f %f %f \n", p_c(0), p_c(1), p_c(2), p_c(3));
+
                     allPoints_word.push_back(p_w);
                     seenInPrevFrame.push_back(1);
                 }
             }
 
             // printf("cur_pts size: %ld || total %ld featurs \n", cur_pts.size(), allPoints_word.size());
+
+            // std::cout << "==============================" << std::endl;
 
             int cur_idx = 0;
             for (int i = 0; i < allPoints_word.size(); i++){
@@ -274,6 +283,12 @@ int main(int argc, char** argv)
                 if(pc1(2) < 0){
                     std::cout << "pc1(2) < 0 should not be here!!!" << std::endl;
                 }
+                
+                // if(i > 147){
+                //     printf("pw: %f %f %f %f \n", pw(0), pw(1), pw(2), pw(3));
+                //     printf("pc1: %f %f %f %f \n", pc1(0), pc1(1), pc1(2), pc1(3));
+                // }
+                
 
                 double u = cur_pts[cur_idx].x;
                 double v = cur_pts[cur_idx].y;
@@ -298,12 +313,12 @@ int main(int argc, char** argv)
                 p.y = obs.y();
                 p.z = pc1(2); // depth || used to be 1.0. but used for depth now
 
-                // set a measurement limit
-                if(p.z > 5){
-                    p.z = -1.0;
-                }else{
-                    // p.z = p.z + dist(generator);
-                } 
+                // // set a measurement limit
+                // if(p.z > 5){
+                //     p.z = -1.0;
+                // }else{
+                //     // p.z = p.z + dist(generator);
+                // } 
 
                 feature_points->points.push_back(p);
 
@@ -415,6 +430,7 @@ int main(int argc, char** argv)
     imuGen.init_twb_ = imudata.at(0).twb;
     imuGen.init_Rwb_ = imudata.at(0).Rwb;
     save_Pose_asTUM("/home/jin/house_model/imu_pose.txt", imudata);
+    save_Pose_asTUM("/home/jin/house_model/cam_pose.txt", camdata);
     save_Pose("/home/jin/house_model/imu_noise_All.txt", imudata_noise);
     save_Pose("/home/jin/house_model/imu_All.txt", imudata);
 

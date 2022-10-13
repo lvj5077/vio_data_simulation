@@ -79,10 +79,10 @@ public:
     double pixel_noise = 0.0;              // 1 pixel noise
 
     // cam f
-    double fx = 484.85;
-    double fy = 484.85;
-    double cx = 320.10;
-    double cy = 223.12;
+    double fx = 460.0;
+    double fy = 460.0;
+    double cx = 320.0;
+    double cy = 240.0;
     double image_w = 640;
     double image_h = 480;
 

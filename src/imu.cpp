@@ -123,8 +123,8 @@ MotionData IMU::MotionModel(double t)
     data.timestamp = t;
     
     // param
-    float ellipse_x = 12;
-    float ellipse_y = 8;
+    float ellipse_x = 7;
+    float ellipse_y = 4;
     float z = 0.2;           // z轴做sin运动
     float K1 = 10;          // z轴的正弦频率是x，y的k1倍
     
@@ -364,7 +364,7 @@ MotionData IMU::MotionModel(double t)
     {
         position.x() = ellipse_x * cos( K * t) ;
         position.y() = ellipse_y * sin( K * t) ;
-        position.z() = t + cos( t-10. ) - 10.5;
+        position.z() = t + cos( t-10. ) - 11. + z+0.5;
 
         dp.x() = - K * ellipse_x * sin(K*t); // 0
         dp.y() = K * ellipse_y * cos(K*t);   // 1

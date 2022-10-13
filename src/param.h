@@ -21,7 +21,7 @@ public:
     double t_start = 0;
     // double t_end = 180;  // seconds
 
-    double t_end = 300;  // seconds
+    double t_end = 620;  // seconds
 
 
 
@@ -62,11 +62,12 @@ public:
 // gyroscope_noise_density:     0.00016    # rad/s^0.5
 // gyroscope_random_walk:       0.000022   # rad/s^1.5
 
-    // double acc_noise_sigma = 0.0028;      //　m/(s^2) * 1/sqrt(hz)
-    // double gyro_noise_sigma = 0.00016;    // rad/s * 1/sqrt(hz)
 
-    // double acc_bias_sigma = 0.00086;
-    // double gyro_bias_sigma = 0.000022;
+// => final results
+// accelerometer_noise_density = 0.00051167
+// accelerometer_random_walk   = 0.00001698
+// gyroscope_noise_density     = 0.00015625
+// gyroscope_random_walk       = 0.00000086
 
     double acc_noise_sigma = 0.005;      //　m/(s^2) * 1/sqrt(hz)
     double gyro_noise_sigma = 0.0015;    // rad/s * 1/sqrt(hz)

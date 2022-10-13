@@ -207,6 +207,56 @@ int main(int argc, char** argv)
                 }
                 prev_idx++;
             }
+
+            // std::vector<int> oldids;
+            // std::vector<cv::Point2f> cur_pts_new;
+            // for (int i = 0; i < allPoints_word.size(); i++){
+            //     Eigen::Vector4d pw = allPoints_word[i];         
+            //     pw[3] = 1;                               
+            //     Eigen::Vector4d pc1 = Twc.inverse() * pw;   // T_wc.inverse() * Pw  -- > point in cam frame
+
+            //     if(pc1(2) < 0 || pc1(2) > 15){ // z必须大于０,在摄像机坐标系前方
+            //         if(seenInPrevFrame[i] > 0){
+            //             prev_idx++;
+            //         }
+            //         seenInPrevFrame[i] = -1;
+            //         continue;
+            //     }                    
+
+            //     cv::Point2f pt;
+            //     pt.x = pc1(0)/pc1(2) * params.fx + params.cx;
+            //     pt.y = pc1(1)/pc1(2) * params.fy + params.cy;
+
+            //     if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h ){
+            //         if (seenInPrevFrame[i] > 0){
+            //             // tracked feature
+            //             cur_pts.push_back(pt);
+            //             prev_pts.push_back(old_pts[prev_idx]);
+            //         }else{
+            //             // existing feature but not recognized in this frame
+            //             oldids.push_back(i);
+            //             cur_pts_new.push_back(pt);
+            //         }
+            //     }else{
+            //         if(seenInPrevFrame[i] > 0){
+            //             prev_idx++;
+            //         }                    
+            //         seenInPrevFrame[i] = -1;
+            //     }
+
+            // }
+
+            // // reusing old Points_word, insert to the end
+            // // todo: pair<vector<int>, Eigen::Vector4d>  id, point
+            // if(oldids.size()>0){
+            //     for(int i = 0; i < oldids.size(); i++){
+            //         allPoints_word.push_back(  allPoints_word[ oldids[i] ]  );
+            //         cur_pts.push_back(cur_pts_new[i]);
+            //         seenInPrevFrame.push_back(1);
+            //     }
+            // }
+
+
             // cur_pts size
             // printf("tracked cur_pts size: %ld || need %ld more featurs  \n", cur_pts.size(), params.feature_num - cur_pts.size());
 

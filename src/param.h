@@ -14,21 +14,15 @@ public:
     Param();
 
     // time
-    int imu_frequency = 200;
+    int imu_frequency = 100;
     int cam_frequency = 10;
     double imu_timestep = 1./imu_frequency;
     double cam_timestep = 1./cam_frequency;
     double t_start = 0;
     // double t_end = 180;  // seconds
 
+    // double t_end = 620;  // seconds
     double t_end = 620;  // seconds
-
-
-
-    // double gyro_bias_sigma = 8.5e-7;
-    // double acc_bias_sigma = 1.5e-5;
-    // double gyro_noise_sigma = 1.5e-4;    // rad/s * 1/sqrt(hz)
-    // double acc_noise_sigma = 5.3e-4;      //　m/(s^2) * 1/sqrt(hz)
 
     // double gyro_bias_sigma = 0.0;
     // double acc_bias_sigma = 0.0;
@@ -40,11 +34,6 @@ public:
 // acc_w: 0.0015 # 0.000535 #0.001        # accelerometer bias random work noise standard deviation.  #0.02
 // gyr_w: 0.000087 #
 
-    // double acc_noise_sigma = 5.e-3;      //　m/(s^2) * 1/sqrt(hz)
-    // double gyro_noise_sigma = 5.e-4;    // rad/s * 1/sqrt(hz)
-
-    // double acc_bias_sigma = 1.5e-4;
-    // double gyro_bias_sigma = 8.5e-6;
 
 // # Values from allan plots
 // # sequence: dataset-calib-imu-static2.bag (full data range)
@@ -69,12 +58,17 @@ public:
 // gyroscope_noise_density     = 0.00015625
 // gyroscope_random_walk       = 0.00000086
 
-    double acc_noise_sigma = 0.005;      //　m/(s^2) * 1/sqrt(hz)
-    double gyro_noise_sigma = 0.0015;    // rad/s * 1/sqrt(hz)
+    // inflate as TUM VI dataset
+    // double acc_noise_sigma = 0.005;      //　m/(s^2) * 1/sqrt(hz)
+    // double gyro_noise_sigma = 0.0015;    // rad/s * 1/sqrt(hz)
+    // double acc_bias_sigma = 0.00003;
+    // double gyro_bias_sigma = 0.000002;
 
-    double acc_bias_sigma = 0.00015;
-    double gyro_bias_sigma = 0.000015;
-
+    // Real iphone 12Pro
+    double acc_noise_sigma = 0.00051167;      //　m/(s^2) * 1/sqrt(hz)
+    double gyro_noise_sigma = 0.00015625;    // rad/s * 1/sqrt(hz)
+    double acc_bias_sigma = 0.00001698;
+    double gyro_bias_sigma = 0.00000086;
 
 
     double pixel_noise = 0.0;              // 1 pixel noise

@@ -123,21 +123,31 @@ void save_Pose(std::string filename, std::vector<MotionData> pose)
         Eigen::Vector3d gyro = data.imu_gyro;
         Eigen::Vector3d acc = data.imu_acc;
 
-        save_points<<time<<" "
-                   <<q.w()<<" "
-                   <<q.x()<<" "
-                   <<q.y()<<" "
-                   <<q.z()<<" "
-                   <<t(0)<<" "
-                   <<t(1)<<" "
-                   <<t(2)<<" "
-                   <<gyro(0)<<" "
-                   <<gyro(1)<<" "
-                   <<gyro(2)<<" "
-                   <<acc(0)<<" "
+        save_points.precision(9);
+        save_points <<time<<" ";
+        save_points.precision(5);
+        save_points<<acc(0)<<" "
                    <<acc(1)<<" "
                    <<acc(2)<<" "
-                   <<std::endl;
+                   <<gyro(0)<<" "
+                   <<gyro(1)<<" "
+                   <<gyro(2)<<std::endl;
+
+        // save_points<<time<<" "
+        //            <<q.w()<<" "
+        //            <<q.x()<<" "
+        //            <<q.y()<<" "
+        //            <<q.z()<<" "
+        //            <<t(0)<<" "
+        //            <<t(1)<<" "
+        //            <<t(2)<<" "
+        //            <<gyro(0)<<" "
+        //            <<gyro(1)<<" "
+        //            <<gyro(2)<<" "
+        //            <<acc(0)<<" "
+        //            <<acc(1)<<" "
+        //            <<acc(2)<<" "
+        //            <<std::endl;
     }
 }
 

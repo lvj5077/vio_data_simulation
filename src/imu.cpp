@@ -384,6 +384,19 @@ MotionData IMU::MotionModel(double t)
 
     }
 
+    // for calibration
+    // eulerAngles.x() = 0.0;
+    // eulerAngles.y() = 0.0;
+    // eulerAngles.z() = 0.0;
+
+    // ddp.x() = 0.0;
+    // ddp.y() = 0.0;
+    // ddp.z() = 0.0;
+    // eulerAnglesRates.x() = 0.0;
+    // eulerAnglesRates.y() = 0.0;
+    // eulerAnglesRates.z() = 0.0;
+
+
     // Eigen::Vector3d position( ellipse_x * cos( K * t) + 5, ellipse_y * sin( K * t) + 5,  z * sin( K1 * K * t ) + 5);
     // Eigen::Vector3d dp(- K * ellipse_x * sin(K*t),  K * ellipse_y * cos(K*t), z*K1*K * cos(K1 * K * t));              // position导数　in world frame
     // Eigen::Vector3d ddp( -K2 * ellipse_x * cos(K*t),  -K2 * ellipse_y * sin(K*t), -z*K1*K1*K2 * sin(K1 * K * t));     // position二阶导数

@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     allPoints_word.clear();
     for (double t = params.t_start; t < params.t_end;) {
         // std::cout << "t = " << t << " / "<< params.t_end << std::endl;
-        
+        // pub_cam = false;
         if(pub_cam)
         {
             std::vector<cv::Point2f> prev_pts;

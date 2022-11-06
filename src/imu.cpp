@@ -4,6 +4,7 @@
 #include <random>
 #include "imu.h"
 #include "utilities.h"
+#include <iomanip>
 
 // euler2Rotation:   body frame to interitail frame
 Eigen::Matrix3d euler2Rotation( Eigen::Vector3d  eulerAngles)
@@ -121,13 +122,13 @@ MotionData IMU::MotionModel(double t)
 
     MotionData data;
     data.timestamp = t;
-    
+
     // param
     float ellipse_x = 7;
     float ellipse_y = 4;
     float z = 0.2;           // z轴做sin运动
     float K1 = 10;          // z轴的正弦频率是x，y的k1倍
-    
+
     float K = M_PI/ 10;    // 20 * K = 2pi 　　由于我们采取的是时间是20s, 系数K控制yaw正好旋转一圈，运动一周
 
     double K2 = K*K;
@@ -146,14 +147,14 @@ MotionData IMU::MotionModel(double t)
 
     // translation
     // twb:  body frame in world frame
-    
+
     double ellipse_init = 1;
     t = t - 5.; // add anothor circular motion for initialisation
-    if(t<5){ 
+    if(t<5){
         // initialization
-        
-        K = 4*M_PI/ 10; 
-        
+
+        K = 4*M_PI/ 10;
+
         position.x() = ellipse_init * cos( K * t) - ellipse_x - ellipse_init;
         position.y() = ellipse_init * sin( K * t) + ellipse_y/5. - 0.5*K * ellipse_init ;
         position.z() = ellipse_init * sin( K * t) + z - 0.5*K * ellipse_init ;
@@ -166,7 +167,7 @@ MotionData IMU::MotionModel(double t)
         ddp.y() = -K*K * ellipse_init * sin(K*t);
         ddp.z() = -K*K * ellipse_init * sin(K*t);
 
-        
+
         eulerAngles.x() = k_roll * cos(K*t);
         eulerAngles.y() = k_pitch * cos(K*t);
         eulerAngles.z() = k_yaw * cos(K*t) - k_yaw;
@@ -176,8 +177,8 @@ MotionData IMU::MotionModel(double t)
         eulerAnglesRates.z() = -k_yaw * K * sin(K*t);
     }
 
-    if(t>=5 && t <6){ 
-        K = 4*M_PI/ 10; 
+    if(t>=5 && t <6){
+        K = 4*M_PI/ 10;
         // slow down
 
         position.x() = - ellipse_x;
@@ -204,7 +205,7 @@ MotionData IMU::MotionModel(double t)
     }
 
     K = M_PI/ 10;
-    if(t>=6. && t <9.){ 
+    if(t>=6. && t <9.){
         // pause for sycn
         K = 4*M_PI/ 10;
         position.x() = - ellipse_x;
@@ -228,7 +229,7 @@ MotionData IMU::MotionModel(double t)
         eulerAnglesRates.z() = 0.0;
     }
 
-    
+
     // circle
     // if(t>=9 && t <10)
     // {
@@ -247,7 +248,7 @@ MotionData IMU::MotionModel(double t)
 
     //     eulerAngles.x() = k_roll;
     //     eulerAngles.y() = k_pitch;
-        
+
     //     eulerAngles.z() = 0.5*K*(t-9.0)*(t-9.0);
 
     //     eulerAnglesRates.x() = 0.0;
@@ -297,7 +298,7 @@ MotionData IMU::MotionModel(double t)
 
     //     eulerAngles.x() = k_roll;
     //     eulerAngles.y() = k_pitch;
-        
+
     //     eulerAngles.z() = 0.0;
 
     //     eulerAnglesRates.x() = 0.0;
@@ -352,7 +353,7 @@ MotionData IMU::MotionModel(double t)
 
         eulerAngles.x() = k_roll;
         eulerAngles.y() = k_pitch;
-        
+
         eulerAngles.z() = 0.5*K*(t-9.0)*(t-9.0);
 
         eulerAnglesRates.x() = 0.0;
@@ -452,7 +453,7 @@ void IMU::testImu(std::vector<MotionData>imudata, std::string dist)
         dq.y() = dtheta_half.y();
         dq.z() = dtheta_half.z();
         dq.normalize();
-        
+
     // #define euler 0
 
     #ifdef euler
@@ -461,13 +462,13 @@ void IMU::testImu(std::vector<MotionData>imudata, std::string dist)
          Qwb = Qwb * dq;
          Pwb = Pwb + Vw * dt + 0.5 * dt * dt * acc_w;
          Vw = Vw + acc_w * dt;
-        
+
     #else
         // std::cerr << "Begin to compute int with mid_val method." << std::endl;
-        /// 中值积分 
+        /// 中值积分
         int pre_idx = i-1;
         MotionData pre_pos = imudata[pre_idx];
-        // w = 1/2 * ((w_k - bk) + (w_k_1 - bk)) 
+        // w = 1/2 * ((w_k - bk) + (w_k_1 - bk))
         auto w_m = 0.5*(imupose.imu_gyro + pre_pos.imu_gyro);
         Eigen::Quaterniond dq_m;
         Eigen::Vector3d dtheta_half_m =  w_m * dt /2.0;
@@ -481,42 +482,28 @@ void IMU::testImu(std::vector<MotionData>imudata, std::string dist)
         Eigen::Vector3d acc_w =  0.5 * (Qwb*(pre_pos.imu_acc)+gw + Qwb_n*(imupose.imu_acc)+ gw);
         // aw =  1/2( Rwb*(acc_body_k - acc_bias) + gw + Rwb_k_1*(acc_body_k_1 - acc_bias) + gw ),
         //   assume acc_bias not change overtime
-        
+
         Pwb = Pwb +Vw * dt + 0.5 *  dt * dt * acc_w;
         Vw = Vw + acc_w * dt;
         // update Qwb;
         Qwb = Qwb_n;
 
         // 中值积分 done.
-    #endif 
+    #endif
 
-        //　按着imu postion, imu quaternion , cam postion, cam quaternion 的格式存储，由于没有cam，所以imu存了两次
-        // save_points<<imupose.timestamp<<" "
-        //            <<Qwb.w()<<" "
-        //            <<Qwb.x()<<" "
-        //            <<Qwb.y()<<" "
-        //            <<Qwb.z()<<" "
-        //            <<Pwb(0)<<" "
-        //            <<Pwb(1)<<" "
-        //            <<Pwb(2)<<" "
-        //            <<Qwb.w()<<" "
-        //            <<Qwb.x()<<" "
-        //            <<Qwb.y()<<" "
-        //            <<Qwb.z()<<" "
-        //            <<Pwb(0)<<" "
-        //            <<Pwb(1)<<" "
-        //            <<Pwb(2)<<" "
-        //            <<std::endl;
-        // save_points<<imupose.timestamp<<" " << Pwb(0) << " " << Pwb(1) << " " << Pwb(2) <<" " <<Qwb.x() << " " << Qwb.y() << " " << Qwb.z() << " " << Qwb.w() << std::endl;
+        save_points << std::fixed << std::setprecision(6)
+            << imupose.timestamp << " "
+            << std::setprecision(5)
+            <<Pwb(0)<<" "
+            <<Pwb(1)<<" "
+            <<Pwb(2)<<" "
+            <<Qwb.x()<<" "
+            <<Qwb.y()<<" "
+            <<Qwb.z()<<" "
+            <<Qwb.w() <<std::endl;
 
-        // printf("imupose.timestamp: %f \n", imupose.timestamp);
-
-        save_points.precision(9);
-        save_points <<imupose.timestamp<<" ";
-        save_points.precision(5);
-        save_points << Pwb(0) << " " << Pwb(1) << " " << Pwb(2) <<" " <<Qwb.x() << " " << Qwb.y() << " " << Qwb.z() << " " << Qwb.w() <<std::endl;
     }
 
-    std::cout<<"test　end"<<std::endl;
+    std::cout<<"test end"<<std::endl;
 
 }

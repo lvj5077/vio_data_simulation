@@ -1,11 +1,11 @@
-#include <ros/ros.h> 
+#include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <sensor_msgs/Imu.h>
 
 
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/core/core.hpp> 
+#include <opencv2/core/core.hpp>
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
@@ -19,6 +19,8 @@
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
 #include <random>
+
+#include <string>
 
 using Point = Eigen::Vector4d;
 using Points = std::vector<Point, Eigen::aligned_allocator<Point> >;
@@ -137,11 +139,14 @@ int main(int argc, char** argv)
     std::normal_distribution<double> dist(mean, stddev);
 
     bool pub_cam = true;
+    int frame_id = 0;
     std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > features_camPre;
     std::vector<cv::Point2f> old_pts;
     std::vector<int> seenInPrevFrame;
     std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > allPoints_word;
     allPoints_word.clear();
+    std::ofstream frame_ts("/home/jin/house_model/frame_ts.txt");
+
     for (double t = params.t_start; t < params.t_end;) {
         // std::cout << "t = " << t << " / "<< params.t_end << std::endl;
         // pub_cam = false;
@@ -163,7 +168,8 @@ int main(int argc, char** argv)
             MotionData imu_w = imuGen.MotionModel(t_cam);   // imu body frame to world frame motion
             MotionData cam;
 
-            cam.timestamp = imu_w.timestamp;
+            // cam.timestamp = imu_w.timestamp;
+            cam.timestamp = time_nowCam.toSec();
             cam.Rwb = imu_w.Rwb * params.R_bc;    // cam frame in world frame
             cam.twb = imu_w.twb + imu_w.Rwb * params.t_bc; //  Tcw = Twb * Tbc ,  t = Rwb * tbc + twb
 
@@ -182,14 +188,14 @@ int main(int argc, char** argv)
                 if(seenInPrevFrame[i] < 0)  // 该点在上一帧中没有被观测到
                     continue;
 
-                Eigen::Vector4d pw = allPoints_word[i];         
-                pw[3] = 1;                               
+                Eigen::Vector4d pw = allPoints_word[i];
+                pw[3] = 1;
                 Eigen::Vector4d pc1 = Twc.inverse() * pw;   // T_wc.inverse() * Pw  -- > point in cam frame
-                if(pc1(2) < 0 || pc1(2) > 15){ // z必须大于０,在摄像机坐标系前方
+                if(pc1(2) < 0 || pc1(2) > 7){ // z必须大于０,在摄像机坐标系前方
                     seenInPrevFrame[i] = -1;
                     prev_idx++;
                     continue;
-                }                    
+                }
 
                 cv::Point2f pt;
                 pt.x = pc1(0)/pc1(2) * params.fx + params.cx;
@@ -211,8 +217,8 @@ int main(int argc, char** argv)
             // std::vector<int> oldids;
             // std::vector<cv::Point2f> cur_pts_new;
             // for (int i = 0; i < allPoints_word.size(); i++){
-            //     Eigen::Vector4d pw = allPoints_word[i];         
-            //     pw[3] = 1;                               
+            //     Eigen::Vector4d pw = allPoints_word[i];
+            //     pw[3] = 1;
             //     Eigen::Vector4d pc1 = Twc.inverse() * pw;   // T_wc.inverse() * Pw  -- > point in cam frame
 
             //     if(pc1(2) < 0 || pc1(2) > 15){ // z必须大于０,在摄像机坐标系前方
@@ -221,7 +227,7 @@ int main(int argc, char** argv)
             //         }
             //         seenInPrevFrame[i] = -1;
             //         continue;
-            //     }                    
+            //     }
 
             //     cv::Point2f pt;
             //     pt.x = pc1(0)/pc1(2) * params.fx + params.cx;
@@ -240,7 +246,7 @@ int main(int argc, char** argv)
             //     }else{
             //         if(seenInPrevFrame[i] > 0){
             //             prev_idx++;
-            //         }                    
+            //         }
             //         seenInPrevFrame[i] = -1;
             //     }
 
@@ -295,7 +301,7 @@ int main(int argc, char** argv)
                 if( pt.x < params.image_w && pt.x > 0 && pt.y > 0 && pt.y < params.image_h && mask.at<uchar>(pt)==255 )
                 {
                     cur_pts.push_back(pt);
-                    double dpt = (double)std::rand() / RAND_MAX * 10. + 0.1;
+                    double dpt = (double)std::rand() / RAND_MAX * 7. + 0.1; // 10m visiblility
 
                     // set a measurement limit
                     // if(dpt > 5){
@@ -325,20 +331,23 @@ int main(int argc, char** argv)
 
             int cur_idx = 0;
             for (int i = 0; i < allPoints_word.size(); i++){
-                if(seenInPrevFrame[i]<0) continue;
+                if(seenInPrevFrame[i]<0){
+                    continue;
+                }
 
-                Eigen::Vector4d pw = allPoints_word[i];         
-                pw[3] = 1;                               
+
+                Eigen::Vector4d pw = allPoints_word[i];
+                pw[3] = 1;
                 Eigen::Vector4d pc1 = Twc.inverse() * pw;   // T_wc.inverse() * Pw  -- > point in cam frame
                 if(pc1(2) < 0){
                     std::cout << "pc1(2) < 0 should not be here!!!" << std::endl;
                 }
-                
+
                 // if(i > 147){
                 //     printf("pw: %f %f %f %f \n", pw(0), pw(1), pw(2), pw(3));
                 //     printf("pc1: %f %f %f %f \n", pc1(0), pc1(1), pc1(2), pc1(3));
                 // }
-                
+
 
                 double u = cur_pts[cur_idx].x;
                 double v = cur_pts[cur_idx].y;
@@ -351,7 +360,7 @@ int main(int argc, char** argv)
                 Eigen::Vector2d obs;
                 obs.x() = (u - params.cx) / params.fx;
                 obs.y() = (v - params.cy) / params.fy;
-                
+
 
                 // printf("uv: %f, %f ", u, v);
                 // printf("obs: %f, %f ", obs.x(), obs.y());
@@ -368,7 +377,7 @@ int main(int argc, char** argv)
                 //     p.z = -1.0;
                 // }else{
                 //     // p.z = p.z + dist(generator);
-                // } 
+                // }
 
                 feature_points->points.push_back(p);
 
@@ -400,32 +409,61 @@ int main(int argc, char** argv)
             feature_points->channels.push_back(velocity_y_of_point);
 
             features_camPre = features_cam;
-            
 
-            
+            frame_id++;
+            std::string frame_name = "/home/jin/house_model/Frame/frame_" + std::to_string(frame_id);
+            std::ofstream save_frame;
+            save_frame.open(frame_name.c_str());
+            for (int i = 0; i < feature_points->points.size(); i++){
+                int feature_id = feature_points->channels[0].values[i];
+                double x = feature_points->points[i].x;
+                double y = feature_points->points[i].y;
+                double z = feature_points->points[i].z;
+
+                double p_u = feature_points->channels[1].values[i];
+                double p_v = feature_points->channels[2].values[i];
+                double velocity_x = feature_points->channels[3].values[i];
+                double velocity_y = feature_points->channels[4].values[i];
+
+                save_frame << feature_id << " " << std::fixed << std::setprecision(5)
+                    << x << " "
+                    << y << " "
+                    << z << " "
+                    << p_u << " "
+                    << p_v << " "
+                    << velocity_x << " "
+                    << velocity_y << std::endl;
+            }
+
+            frame_ts << std::fixed << std::setprecision(6) << time_nowCam.toSec() << " " << frame_id << std::endl;
+
+
             bag.write("/feature_tracker/feature", time_nowCam, feature_points);
+            usleep(15);
 
             printf("feature_points->header.stamp.toSec():   %f\n", feature_points->header.stamp.toSec());
 
             if(t_cam < 0.0001){
                 prev_pts = cur_pts;
             }
-            
-            cv_bridge::CvImage track_msg; 
-            track_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3; 
+
+            cv_bridge::CvImage track_msg;
+            track_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
             track_msg.header.stamp = time_nowCam;
-            track_msg.image = trackImg; 
-            // bag.write("/feature_tracker/feature_img", time_nowCam, track_msg); 
+            track_msg.image = trackImg;
+            // bag.write("/feature_tracker/feature_img", time_nowCam, track_msg);
 
             pub_cam = false;
             old_pts = cur_pts;
         }
 
-
+        ros::Time time_now(begin + t);
+        sensor_msgs::Imu imu_data;
         // create imu data && add imu noise
         MotionData data = imuGen.MotionModel(t);
         // data.timestamp = t + begin;
-        data.timestamp = t;
+        // data.timestamp = t;
+        data.timestamp = time_now.toSec();
         imudata.push_back(data);
         MotionData data_noise = data;
         imuGen.addIMUnoise(data_noise);
@@ -435,8 +473,6 @@ int main(int argc, char** argv)
         Eigen::Quaterniond q(data.Rwb);
 
         // to ros msg
-        ros::Time time_now(begin + t);
-        sensor_msgs::Imu imu_data;
         imu_data.header.stamp = time_now;
         imu_data.header.frame_id = "base_link";
         //四元数位姿
@@ -449,40 +485,41 @@ int main(int argc, char** argv)
 
 
         //线加速度
-        imu_data.linear_acceleration.x = data_noise.imu_acc(0); 
+        imu_data.linear_acceleration.x = data_noise.imu_acc(0);
         imu_data.linear_acceleration.y = data_noise.imu_acc(1);
         imu_data.linear_acceleration.z = data_noise.imu_acc(2);
         // std::cout << "linear_acceleration: " << data_noise.imu_acc(0) << " " << data_noise.imu_acc(1) << " " << data_noise.imu_acc(2) << std::endl;
 
         //角速度
-        imu_data.angular_velocity.x = data_noise.imu_gyro(0); 
-        imu_data.angular_velocity.y = data_noise.imu_gyro(1); 
+        imu_data.angular_velocity.x = data_noise.imu_gyro(0);
+        imu_data.angular_velocity.y = data_noise.imu_gyro(1);
         imu_data.angular_velocity.z = data_noise.imu_gyro(2);
 
         // std::cout << "cam.timestamp = " <<  << imu_data.header.stamp.toSec() << std::endl;
-        
+
         printf("imu_data.header.stamp =                 %f\n", imu_data.header.stamp.toSec());
         bag.write("/imu0", time_now, imu_data);
+        // usleep(5);
 
-        t += 1.0/params.imu_frequency;
+        t += params.imu_timestep;
 
-        if( t > t_cam + 1.0/params.cam_frequency){
-            t_cam += 1.0/params.cam_frequency;
+        if( t > t_cam + params.cam_timestep){
+            t_cam += params.cam_timestep;
             pub_cam = true;
         }
 
     }
     // fflush(stdout);
     bag.close();
-    
+
 
     imuGen.init_velocity_ = imudata[0].imu_velocity;
     imuGen.init_twb_ = imudata.at(0).twb;
     imuGen.init_Rwb_ = imudata.at(0).Rwb;
     save_Pose_asTUM("/home/jin/house_model/imu_pose.txt", imudata);
     save_Pose_asTUM("/home/jin/house_model/cam_pose.txt", camdata);
-    save_Pose("/home/jin/house_model/imu_noise_All.txt", imudata_noise);
-    save_Pose("/home/jin/house_model/imu_All.txt", imudata);
+    save_Pose("/home/jin/house_model/imu_noise.txt", imudata_noise);
+    save_Pose("/home/jin/house_model/imu.txt", imudata);
 
     imuGen.testImu(imudata, "/home/jin/house_model/imu_int_pose.txt");     // test the imu data, integrate the imu data to generate the imu trajecotry
     imuGen.testImu(imudata_noise, "/home/jin/house_model/imu_int_pose_noise.txt");
